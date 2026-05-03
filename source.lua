@@ -3875,11 +3875,11 @@ if useStudio then
 
 
 	--local Window = RayfieldLibrary:CreateWindow({
-	--	Name = "Rayfield Example Window",
-	--	LoadingTitle = "Rayfield Interface Suite",
+	--	Name = "Chilly Example Window",
+	--	LoadingTitle = "Chilly Interface Suite",
 	--	Theme = 'Default',
 	--	Icon = 0,
-	--	LoadingSubtitle = "by Sirius",
+	--	LoadingSubtitle = "by Khai",
 	--	ConfigurationSaving = {
 	--		Enabled = true,
 	--		FolderName = nil, -- Create a custom folder for your hub/game
