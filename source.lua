@@ -3876,7 +3876,7 @@ if useStudio then
 
 	--local Window = RayfieldLibrary:CreateWindow({
 	--	Name = "Chilly Example Window",
-	--	LoadingTitle = "Chilly Interface Suite",
+	--	LoadingTitle = "Chilly Loading...",
 	--	Theme = 'Default',
 	--	Icon = 0,
 	--	LoadingSubtitle = "by Khai",
