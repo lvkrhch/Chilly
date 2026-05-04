@@ -1,7 +1,7 @@
 --[[
 
-	Rayfield Interface Suite
-	by Sirius
+	Chilly Interface Suite
+	by Khai
 
 	shlex  | Designing + Programming
 	iRay   | Programming
@@ -11,7 +11,7 @@
 ]]
 
 if debugX then
-	warn('Initialising Rayfield')
+	warn('Initialising Chilly')
 end
 
 
@@ -82,11 +82,11 @@ local requestsDisabled = false
 local customAssetId = nil
 local secureMode = false
 if _getgenv then
-	local ok, result = pcall(function() return _getgenv().DISABLE_RAYFIELD_REQUESTS end)
+	local ok, result = pcall(function() return _getgenv().DISABLE_CHILLY_REQUESTS or _getgenv().DISABLE_RAYFIELD_REQUESTS end)
 	if ok and result then requestsDisabled = true end
-	local ok2, result2 = pcall(function() return _getgenv().RAYFIELD_ASSET_ID end)
+	local ok2, result2 = pcall(function() return _getgenv().CHILLY_ASSET_ID or _getgenv().RAYFIELD_ASSET_ID end)
 	if ok2 and type(result2) == "number" then customAssetId = result2 end
-	local ok3, result3 = pcall(function() return _getgenv().RAYFIELD_SECURE end)
+	local ok3, result3 = pcall(function() return _getgenv().CHILLY_SECURE or _getgenv().RAYFIELD_SECURE end)
 	if ok3 and result3 then secureMode = true end
 end
 
@@ -115,20 +115,20 @@ local function secureNotify(wType, title, content)
 	end)
 end
 local InterfaceBuild = 'UU2NX'
-local Release = "Build 1.746"
-local RayfieldFolder = "Rayfield"
+local Release = "Chilly Build 1.0.0"
+local RayfieldFolder = "Chilly"
 local ConfigurationFolder = RayfieldFolder.."/Configurations"
-local ConfigurationExtension = ".rfld"
+local ConfigurationExtension = ".chly"
 local settingsTable = {
 	General = {
 		-- if needs be in order just make getSetting(name)
-		rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Rayfield Keybind'},
+		rayfieldOpen = {Type = 'bind', Value = 'K', Name = 'Chilly Keybind'},
 		-- buildwarnings
 		-- rayfieldprompts
 
 	},
 	System = {
-		usageAnalytics = {Type = 'toggle', Value = true, Name = 'Anonymised Analytics'},
+		usageAnalytics = {Type = 'toggle', Value = false, Name = 'Anonymised Analytics'},
 	}
 }
 
@@ -160,12 +160,11 @@ local useStudio = RunService:IsStudio() or false
 
 local settingsCreated = false
 local settingsInitialized = false -- Whether the UI elements in the settings page have been set to the proper values
-local prompt = useStudio and require(script.Parent.prompt) or loadWithTimeout('https://raw.githubusercontent.com/SiriusSoftwareLtd/Sirius/refs/heads/request/prompt.lua')
+local prompt = useStudio and require(script.Parent.prompt) or nil
 local requestFunc = (syn and syn.request) or (fluxus and fluxus.request) or (http and http.request) or http_request or request
 
 -- Validate prompt loaded correctly
 if not prompt and not useStudio then
-	warn("Failed to load prompt library, using fallback")
 	prompt = {
 		create = function() end -- No-op fallback
 	}
@@ -178,7 +177,7 @@ local function callSafely(func, ...)
 	if func then
 		local success, result = pcall(func, ...)
 		if not success then
-			warn("Rayfield | Function failed with error: ", result)
+			warn("Chilly | Function failed with error: ", result)
 			return false
 		else
 			return result
@@ -206,7 +205,7 @@ local function loadSettings()
 		-- for debug in studio
 		if useStudio then
 			file = [[
-	{"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Rayfield Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Rayfield Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
+	{"General":{"rayfieldOpen":{"Value":"K","Type":"bind","Name":"Chilly Keybind","Element":{"HoldToInteract":false,"Ext":true,"Name":"Chilly Keybind","Set":null,"CallOnChange":true,"Callback":null,"CurrentKeybind":"K"}}},"System":{"usageAnalytics":{"Value":false,"Type":"toggle","Name":"Anonymised Analytics","Element":{"Ext":true,"Name":"Anonymised Analytics","Set":null,"CurrentValue":false,"Callback":null}}}}
 ]]
 		end
 
@@ -241,7 +240,7 @@ local function loadSettings()
 		else
 			for settingName, settingValue in overriddenSettings do
 				local split = string.split(settingName, ".")
-				assert(#split == 2, "Rayfield | Invalid overridden setting name: " .. settingName)
+				assert(#split == 2, "Chilly | Invalid overridden setting name: " .. settingName)
 				local categoryName = split[1]
 				local settingNameOnly = split[2]
 				if settingsTable[categoryName] and settingsTable[categoryName][settingNameOnly] then
@@ -254,7 +253,7 @@ local function loadSettings()
 
 	if not success then 
 		if writefile then
-			warn('Rayfield had an issue accessing configuration saving capability.')
+			warn('Chilly had an issue accessing configuration saving capability.')
 		end
 	end
 end
@@ -269,27 +268,9 @@ if debugX then
 	warn('Settings Loaded')
 end
 
-local ANALYTICS_TOKEN = "05de7f9fd320d3b8428cd1c77014a337b85b6c8efee2c5914f5ab5700c354b9a"
+local ANALYTICS_TOKEN = nil
 
 local reporter = nil
-if not requestsDisabled and not useStudio then
-	local fetchSuccess, fetchResult = pcall((game :: any).HttpGet, game, "https://raw.githubusercontent.com/SiriusSoftwareLtd/Rayfield/refs/heads/main/reporter.lua")
-	if fetchSuccess and #fetchResult > 0 then
-		local execSuccess, Analytics = pcall(function()
-			return (loadstring(fetchResult) :: any)()
-		end)
-		if execSuccess and Analytics then
-			pcall(function()
-				reporter = Analytics.new({
-					url          = "https://rayfield-collect.sirius-software-ltd.workers.dev",
-					token        = ANALYTICS_TOKEN,
-					product_name = "Rayfield",
-					category     = "UILibrary",
-				})
-			end)
-		end
-	end
-end
 
 local promptUser = 2
 
@@ -315,45 +296,45 @@ local RayfieldLibrary = {
 	Flags = {},
 	Theme = {
 		Default = {
-			TextColor = Color3.fromRGB(240, 240, 240),
+			TextColor = Color3.fromRGB(237, 246, 255),
 
-			Background = Color3.fromRGB(25, 25, 25),
-			Topbar = Color3.fromRGB(34, 34, 34),
-			Shadow = Color3.fromRGB(20, 20, 20),
+			Background = Color3.fromRGB(7, 16, 34),
+			Topbar = Color3.fromRGB(10, 25, 52),
+			Shadow = Color3.fromRGB(1, 6, 18),
 
-			NotificationBackground = Color3.fromRGB(20, 20, 20),
-			NotificationActionsBackground = Color3.fromRGB(230, 230, 230),
+			NotificationBackground = Color3.fromRGB(10, 25, 52),
+			NotificationActionsBackground = Color3.fromRGB(229, 241, 255),
 
-			TabBackground = Color3.fromRGB(80, 80, 80),
-			TabStroke = Color3.fromRGB(85, 85, 85),
-			TabBackgroundSelected = Color3.fromRGB(210, 210, 210),
-			TabTextColor = Color3.fromRGB(240, 240, 240),
-			SelectedTabTextColor = Color3.fromRGB(50, 50, 50),
+			TabBackground = Color3.fromRGB(14, 32, 65),
+			TabStroke = Color3.fromRGB(36, 73, 126),
+			TabBackgroundSelected = Color3.fromRGB(168, 207, 255),
+			TabTextColor = Color3.fromRGB(193, 215, 242),
+			SelectedTabTextColor = Color3.fromRGB(4, 16, 36),
 
-			ElementBackground = Color3.fromRGB(35, 35, 35),
-			ElementBackgroundHover = Color3.fromRGB(40, 40, 40),
-			SecondaryElementBackground = Color3.fromRGB(25, 25, 25),
-			ElementStroke = Color3.fromRGB(50, 50, 50),
-			SecondaryElementStroke = Color3.fromRGB(40, 40, 40),
+			ElementBackground = Color3.fromRGB(12, 28, 58),
+			ElementBackgroundHover = Color3.fromRGB(18, 41, 80),
+			SecondaryElementBackground = Color3.fromRGB(8, 21, 46),
+			ElementStroke = Color3.fromRGB(46, 88, 144),
+			SecondaryElementStroke = Color3.fromRGB(26, 56, 103),
 
-			SliderBackground = Color3.fromRGB(50, 138, 220),
-			SliderProgress = Color3.fromRGB(50, 138, 220),
-			SliderStroke = Color3.fromRGB(58, 163, 255),
+			SliderBackground = Color3.fromRGB(24, 73, 132),
+			SliderProgress = Color3.fromRGB(103, 180, 255),
+			SliderStroke = Color3.fromRGB(154, 211, 255),
 
-			ToggleBackground = Color3.fromRGB(30, 30, 30),
-			ToggleEnabled = Color3.fromRGB(0, 146, 214),
-			ToggleDisabled = Color3.fromRGB(100, 100, 100),
-			ToggleEnabledStroke = Color3.fromRGB(0, 170, 255),
-			ToggleDisabledStroke = Color3.fromRGB(125, 125, 125),
-			ToggleEnabledOuterStroke = Color3.fromRGB(100, 100, 100),
-			ToggleDisabledOuterStroke = Color3.fromRGB(65, 65, 65),
+			ToggleBackground = Color3.fromRGB(8, 21, 46),
+			ToggleEnabled = Color3.fromRGB(72, 159, 255),
+			ToggleDisabled = Color3.fromRGB(75, 93, 122),
+			ToggleEnabledStroke = Color3.fromRGB(170, 220, 255),
+			ToggleDisabledStroke = Color3.fromRGB(92, 111, 140),
+			ToggleEnabledOuterStroke = Color3.fromRGB(49, 108, 178),
+			ToggleDisabledOuterStroke = Color3.fromRGB(38, 55, 82),
 
-			DropdownSelected = Color3.fromRGB(40, 40, 40),
-			DropdownUnselected = Color3.fromRGB(30, 30, 30),
+			DropdownSelected = Color3.fromRGB(15, 37, 75),
+			DropdownUnselected = Color3.fromRGB(8, 21, 46),
 
-			InputBackground = Color3.fromRGB(30, 30, 30),
-			InputStroke = Color3.fromRGB(65, 65, 65),
-			PlaceholderColor = Color3.fromRGB(178, 178, 178)
+			InputBackground = Color3.fromRGB(9, 22, 48),
+			InputStroke = Color3.fromRGB(47, 87, 142),
+			PlaceholderColor = Color3.fromRGB(134, 163, 196)
 		},
 
 		Ocean = {
@@ -693,6 +674,9 @@ local RayfieldLibrary = {
 	}
 }
 
+RayfieldLibrary.Theme.Chilly = RayfieldLibrary.Theme.Default
+RayfieldLibrary.Theme.ChillyMac = RayfieldLibrary.Theme.Default
+
 
 
 
@@ -715,8 +699,8 @@ repeat
 	correctBuild = false
 
 	if not warned then
-		warn('Rayfield | Build Mismatch')
-		print('Rayfield may encounter issues as you are running an incompatible interface version ('.. ((Rayfield:FindFirstChild('Build') and Rayfield.Build.Value) or 'No Build') ..').\n\nThis version of Rayfield is intended for interface build '..InterfaceBuild..'.')
+		warn('Chilly | Build Mismatch')
+		print('Chilly may encounter issues as you are running an incompatible interface version ('.. ((Rayfield:FindFirstChild('Build') and Rayfield.Build.Value) or 'No Build') ..').\n\nThis version of Chilly is intended for interface build '..InterfaceBuild..'.')
 		warned = true
 	end
 
@@ -744,20 +728,20 @@ if gethui then
 	for _, Interface in ipairs(gethui():GetChildren()) do
 		if Interface.Name == Rayfield.Name and Interface ~= Rayfield then
 			Interface.Enabled = false
-			Interface.Name = "Rayfield-Old"
+			Interface.Name = "Chilly-Old"
 		end
 	end
 elseif not useStudio then
 	for _, Interface in ipairs(CoreGui:GetChildren()) do
 		if Interface.Name == Rayfield.Name and Interface ~= Rayfield then
 			Interface.Enabled = false
-			Interface.Name = "Rayfield-Old"
+			Interface.Name = "Chilly-Old"
 		end
 	end
 end
 
 if secureMode and not customAssetId then
-	secureNotify("default_asset", "Secure Mode", "You are using the default Rayfield asset ID. Set RAYFIELD_ASSET_ID to a custom upload to avoid detection.")
+	secureNotify("default_asset", "Secure Mode", "You are using the default Chilly asset ID. Set CHILLY_ASSET_ID to a custom upload to avoid detection.")
 end
 
 do
@@ -826,17 +810,17 @@ do
 				if success then
 					customAssets[tostring(id)] = asset
 				else
-					warn("Rayfield | Failed to load custom asset: "..tostring(id).." - "..tostring(asset))
+			warn("Chilly | Failed to load custom asset: "..tostring(id).." - "..tostring(asset))
 				end
 			end
 		end)
 
 		if not ok then
-			warn("Rayfield | Failed to load custom assets: "..tostring(err))
-			secureNotify("asset_load_fail", "Rayfield", "Failed to load custom assets. UI images may not display correctly.")
+			warn("Chilly | Failed to load custom assets: "..tostring(err))
+			secureNotify("asset_load_fail", "Chilly", "Failed to load custom assets. UI images may not display correctly.")
 		end
 	else
-		secureNotify("no_getcustomasset", "Rayfield", "Your executor does not support getcustomasset. Some UI images may not render correctly.")
+		secureNotify("no_getcustomasset", "Chilly", "Your executor does not support getcustomasset. Some UI images may not render correctly.")
 	end
 
 
@@ -927,6 +911,15 @@ local function ChangeTheme(Theme)
 	Rayfield.Main.Topbar.ChangeSize.ImageColor3 = SelectedTheme.TextColor
 	Rayfield.Main.Topbar.Hide.ImageColor3 = SelectedTheme.TextColor
 	Rayfield.Main.Topbar.Search.ImageColor3 = SelectedTheme.TextColor
+	if Rayfield.Main.Topbar:FindFirstChild('Icon') then
+		if Rayfield.Main.Topbar.Icon:GetAttribute('ChillyLogo') then
+			Rayfield.Main.Topbar.Icon.ImageColor3 = SelectedTheme.TextColor
+		end
+		local eye = Rayfield.Main.Topbar.Icon:FindFirstChild('ChillyEye')
+		if eye then
+			eye.ImageColor3 = SelectedTheme.TextColor
+		end
+	end
 	if Topbar:FindFirstChild('Settings') then
 		Rayfield.Main.Topbar.Settings.ImageColor3 = SelectedTheme.TextColor
 		Rayfield.Main.Topbar.Divider.BackgroundColor3 = SelectedTheme.ElementStroke
@@ -993,9 +986,9 @@ local function getAssetUri(id: any): string
 	if type(id) == "number" then
 		assetUri = "rbxassetid://" .. id
 	elseif type(id) == "string" and not Icons then
-		warn("Rayfield | Cannot use Lucide icons as icons library is not loaded")
+		warn("Chilly | Cannot use Lucide icons as icons library is not loaded")
 	else
-		warn("Rayfield | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
+		warn("Chilly | The icon argument must either be an icon ID (number) or a Lucide icon name (string)")
 	end
 	return assetUri
 end
@@ -1023,6 +1016,53 @@ local function resolveIcon(icon)
 		return "rbxassetid://" .. asset.id, asset.imageRectOffset, asset.imageRectSize
 	else
 		return getAssetUri(icon), nil, nil
+	end
+end
+
+local function paintIcon(imageObject, icon)
+	local img, rectOffset, rectSize = resolveIcon(icon)
+	imageObject.Image = img
+	imageObject.ImageRectOffset = rectOffset or Vector2.new(0, 0)
+	imageObject.ImageRectSize = rectSize or Vector2.new(0, 0)
+	imageObject.ImageColor3 = SelectedTheme.TextColor
+end
+
+local function applyChillyLogo()
+	if not Topbar:FindFirstChild('Icon') then return end
+
+	Topbar.Icon.Visible = true
+	Topbar.Icon.BackgroundTransparency = 1
+	Topbar.Icon.ImageTransparency = 0
+	Topbar.Icon.Size = UDim2.new(0, 26, 0, 26)
+	Topbar.Title.Position = UDim2.new(0, 49, 0.5, 0)
+	Topbar.Icon:SetAttribute('ChillyLogo', true)
+
+	local ok = pcall(function()
+		paintIcon(Topbar.Icon, "triangle")
+	end)
+
+	if not ok then
+		Topbar.Icon.Image = ""
+	end
+
+	local eye = Topbar.Icon:FindFirstChild('ChillyEye')
+	if not eye then
+		eye = Instance.new("ImageLabel")
+		eye.Name = "ChillyEye"
+		eye.BackgroundTransparency = 1
+		eye.AnchorPoint = Vector2.new(0.5, 0.5)
+		eye.Position = UDim2.new(0.5, 0, 0.55, 0)
+		eye.Size = UDim2.new(0, 13, 0, 13)
+		eye.ZIndex = Topbar.Icon.ZIndex + 1
+		eye.Parent = Topbar.Icon
+	end
+
+	local eyeOk = pcall(function()
+		paintIcon(eye, "eye")
+	end)
+
+	if not eyeOk then
+		eye.Image = ""
 	end
 end
 
@@ -1115,7 +1155,7 @@ local function LoadConfiguration(Configuration)
 	local success, Data = pcall(function() return HttpService:JSONDecode(Configuration) end)
 	local changed
 
-	if not success then warn('Rayfield had an issue decoding the configuration file, please try delete the file and reopen Rayfield.') return end
+	if not success then warn('Chilly had an issue decoding the configuration file, please delete the file and reopen Chilly.') return end
 
 	-- Iterate through current UI elements' flags
 	for FlagName, Flag in pairs(RayfieldLibrary.Flags) do
@@ -1134,9 +1174,9 @@ local function LoadConfiguration(Configuration)
 				end
 			end)
 		else
-			warn("Rayfield | Unable to find '"..FlagName.. "' in the save file.")
+			warn("Chilly | Unable to find '"..FlagName.. "' in the save file.")
 			print("The error above may not be an issue if new elements have been added or not been set values.")
-			--RayfieldLibrary:Notify({Title = "Rayfield Flags", Content = "Rayfield was unable to find '"..FlagName.. "' in the save file. Check sirius.menu/discord for help.", Image = 3944688398})
+			--RayfieldLibrary:Notify({Title = "Chilly Flags", Content = "Chilly was unable to find '"..FlagName.. "' in the save file. Check your Chilly community for help.", Image = 3944688398})
 		end
 	end
 
@@ -1236,8 +1276,8 @@ function RayfieldLibrary:Notify(data) -- action e.g open messages
 		newNotification.Visible = true
 
 		if data.Actions then
-			warn('Rayfield | Not seeing your actions in notifications?')
-			print("Notification Actions are being sunset for now, keep up to date on when they're back in the discord. (sirius.menu/discord)")
+			warn('Chilly | Not seeing your actions in notifications?')
+			print("Notification Actions are being sunset for now, keep up to date on when they're back in the discord. (your Chilly community)")
 		end
 
 		-- Calculate textbounds and set initial values
@@ -1599,14 +1639,14 @@ local function createSettings(window)
 		return
 	end
 
-	local newTab = window:CreateTab('Rayfield Settings', 0, true)
+	local newTab = window:CreateTab('Chilly Settings', 0, true)
 
-	if TabList['Rayfield Settings'] then
-		TabList['Rayfield Settings'].LayoutOrder = 1000
+	if TabList['Chilly Settings'] then
+		TabList['Chilly Settings'].LayoutOrder = 1000
 	end
 
-	if Elements['Rayfield Settings'] then
-		Elements['Rayfield Settings'].LayoutOrder = 1000
+	if Elements['Chilly Settings'] then
+		Elements['Chilly Settings'].LayoutOrder = 1000
 	end
 
 	-- Create sections and elements
@@ -1671,7 +1711,7 @@ end
 
 function RayfieldLibrary:CreateWindow(Settings)
 	if Rayfield:FindFirstChild('Loading') then
-		if getgenv and not getgenv().rayfieldCached then
+		if getgenv and not (getgenv().chillyCached or getgenv().rayfieldCached) then
 			Rayfield.Enabled = true
 			Rayfield.Loading.Visible = true
 
@@ -1680,12 +1720,12 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 	end
 
-	if getgenv then getgenv().rayfieldCached = true end
+	if getgenv then getgenv().chillyCached = true end
 
 	if not correctBuild and not Settings.DisableBuildWarnings then
 		task.delay(3, 
 			function() 
-				RayfieldLibrary:Notify({Title = 'Build Mismatch', Content = 'Rayfield may encounter issues as you are running an incompatible interface version ('.. ((Rayfield:FindFirstChild('Build') and Rayfield.Build.Value) or 'No Build') ..').\n\nThis version of Rayfield is intended for interface build '..InterfaceBuild..'.\n\nTry rejoining and then run the script twice.', Image = 4335487866, Duration = 15})		
+				RayfieldLibrary:Notify({Title = 'Build Mismatch', Content = 'Chilly may encounter issues as you are running an incompatible interface version ('.. ((Rayfield:FindFirstChild('Build') and Rayfield.Build.Value) or 'No Build') ..').\n\nThis version of Chilly is intended for interface build '..InterfaceBuild..'.\n\nTry rejoining and then run the script twice.', Image = 4335487866, Duration = 15})		
 			end)
 	end
 
@@ -1708,7 +1748,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 	ensureFolder(RayfieldFolder)
 
 	local Passthrough = false
-	Topbar.Title.Text = Settings.Name
+	Topbar.Title.Text = Settings.Name or "Chilly by Khai"
 
 	Main.Size = UDim2.new(0, 420, 0, 100)
 	Main.Visible = true
@@ -1724,16 +1764,19 @@ function RayfieldLibrary:CreateWindow(Settings)
 	end
 
 	LoadingFrame.Version.TextTransparency = 1
-	LoadingFrame.Title.Text = Settings.LoadingTitle or "Rayfield"
-	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "Interface Suite"
+	LoadingFrame.Title.Text = Settings.LoadingTitle or "Chilly Interface Suite"
+	LoadingFrame.Subtitle.Text = Settings.LoadingSubtitle or "by Khai"
 
-	if Settings.LoadingTitle ~= "Rayfield Interface Suite" then
-		LoadingFrame.Version.Text = "Rayfield UI"
+	if (Settings.LoadingTitle or "Chilly Interface Suite") ~= "Chilly Interface Suite" then
+		LoadingFrame.Version.Text = "Chilly UI"
 	end
 
 	if Settings.Icon and Settings.Icon ~= 0 and Topbar:FindFirstChild('Icon') then
 		Topbar.Icon.Visible = true
 		Topbar.Title.Position = UDim2.new(0, 47, 0.5, 0)
+		Topbar.Icon:SetAttribute('ChillyLogo', false)
+		local eye = Topbar.Icon:FindFirstChild('ChillyEye')
+		if eye then eye:Destroy() end
 
 		if Settings.Icon then
 			local img, rectOffset, rectSize = resolveIcon(Settings.Icon)
@@ -1743,6 +1786,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 		else
 			Topbar.Icon.Image = ""
 		end
+	else
+		applyChillyLogo()
 	end
 
 	if dragBar then
@@ -1751,31 +1796,34 @@ function RayfieldLibrary:CreateWindow(Settings)
 		dragBar.Visible = true
 	end
 
-	if Settings.Theme then
-		local success, result = pcall(ChangeTheme, Settings.Theme)
+	local success, result = pcall(ChangeTheme, Settings.Theme or 'Default')
+	if not success then
+		local success, result2 = pcall(ChangeTheme, 'Default')
 		if not success then
-			local success, result2 = pcall(ChangeTheme, 'Default')
-			if not success then
-				warn('CRITICAL ERROR - NO DEFAULT THEME')
-				print(result2)
-			end
-			warn('issue rendering theme. no theme on file')
-			print(result)
+			warn('CRITICAL ERROR - NO DEFAULT THEME')
+			print(result2)
 		end
+		warn('issue rendering theme. no theme on file')
+		print(result)
 	end
 
 	Topbar.Visible = false
 	Elements.Visible = false
 	LoadingFrame.Visible = true
 
-	if not Settings.DisableRayfieldPrompts then
+	local disableChillyPrompts = Settings.DisableChillyPrompts
+	if Settings.DisableRayfieldPrompts ~= nil then
+		disableChillyPrompts = Settings.DisableRayfieldPrompts
+	end
+
+	if Settings.EnableChillyPrompts and not disableChillyPrompts then
 		task.spawn(function()
 			while not rayfieldDestroyed do
 				task.wait(math.random(180, 600))
 				if rayfieldDestroyed then break end
 				RayfieldLibrary:Notify({
-					Title = "Rayfield Interface",
-					Content = "Enjoying this UI library? Find it at sirius.menu/discord",
+					Title = "Chilly by Khai",
+					Content = "Deep-blue interface loaded and ready.",
 					Duration = 7,
 					Image = 4370033185,
 				})
@@ -1837,7 +1885,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 			end
 
 			if Settings.Discord.RememberJoins then -- We do logic this way so if the developer changes this setting, the user still won't be prompted, only new users
-				callSafely(writefile, RayfieldFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension,"Rayfield RememberJoins is true for this invite, this invite will not ask you to join again")
+				callSafely(writefile, RayfieldFolder.."/Discord Invites".."/"..Settings.Discord.Invite..ConfigurationExtension,"Chilly RememberJoins is true for this invite, this invite will not ask you to join again")
 			end
 		end
 	end
@@ -1859,8 +1907,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					Settings.KeySettings.Key[i] = string.gsub(Settings.KeySettings.Key[i], " ", "")
 				end)
 				if not Success then
-					print("Rayfield | "..Key.." Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..Key.." Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 				end
 			end
 		end
@@ -1879,7 +1927,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		end
 
 		if not Passthrough and secureMode then
-			warn("Rayfield | Secure Mode: Key system requires a valid saved key. The key UI cannot be shown as it requires loading detectable assets.")
+			warn("Chilly | Secure Mode: Key system requires a valid saved key. The key UI cannot be shown as it requires loading detectable assets.")
 			Rayfield.Enabled = false
 			return RayfieldLibrary
 		end
@@ -2186,8 +2234,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Button.ElementIndicator, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {TextTransparency = 1}):Play()
 					TweenService:Create(Button.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Button.Title.Text = "Callback Error"
-					print("Rayfield | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..ButtonSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 					task.wait(0.5)
 					Button.Title.Text = ButtonSettings.Name
 					TweenService:Create(Button, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -2669,8 +2717,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Input.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Input.Title.Text = "Callback Error"
-					print("Rayfield | "..InputSettings.Name.." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..InputSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 					task.wait(0.5)
 					Input.Title.Text = InputSettings.Name
 					TweenService:Create(Input, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -2909,8 +2957,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 							TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 							TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 							Dropdown.Title.Text = "Callback Error"
-							print("Rayfield | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
-							warn('Check docs.sirius.menu for help with Rayfield specific development.')
+							print("Chilly | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+							warn('Check the Chilly documentation for UI-library development help.')
 							task.wait(0.5)
 							Dropdown.Title.Text = DropdownSettings.Name
 							TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -2999,8 +3047,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Dropdown.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Dropdown.Title.Text = "Callback Error"
-					print("Rayfield | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..DropdownSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 					task.wait(0.5)
 					Dropdown.Title.Text = DropdownSettings.Name
 					TweenService:Create(Dropdown, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3144,8 +3192,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 							TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 							TweenService:Create(Keybind.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 							Keybind.Title.Text = "Callback Error"
-							print("Rayfield | "..KeybindSettings.Name.." Callback Error " ..tostring(Response))
-							warn('Check docs.sirius.menu for help with Rayfield specific development.')
+							print("Chilly | "..KeybindSettings.Name.." Callback Error " ..tostring(Response))
+							warn('Check the Chilly documentation for UI-library development help.')
 							task.wait(0.5)
 							Keybind.Title.Text = KeybindSettings.Name
 							TweenService:Create(Keybind, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3275,8 +3323,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Toggle.Title.Text = "Callback Error"
-					print("Rayfield | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 					task.wait(0.5)
 					Toggle.Title.Text = ToggleSettings.Name
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3325,8 +3373,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Toggle.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Toggle.Title.Text = "Callback Error"
-					print("Rayfield | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..ToggleSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 					task.wait(0.5)
 					Toggle.Title.Text = ToggleSettings.Name
 					TweenService:Create(Toggle, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3474,8 +3522,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 								TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 								Slider.Title.Text = "Callback Error"
-								print("Rayfield | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
-								warn('Check docs.sirius.menu for help with Rayfield specific development.')
+								print("Chilly | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
+								warn('Check the Chilly documentation for UI-library development help.')
 								task.wait(0.5)
 								Slider.Title.Text = SliderSettings.Name
 								TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3508,8 +3556,8 @@ function RayfieldLibrary:CreateWindow(Settings)
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = Color3.fromRGB(85, 0, 0)}):Play()
 					TweenService:Create(Slider.UIStroke, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {Transparency = 1}):Play()
 					Slider.Title.Text = "Callback Error"
-					print("Rayfield | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
-					warn('Check docs.sirius.menu for help with Rayfield specific development.')
+					print("Chilly | "..SliderSettings.Name.." Callback Error " ..tostring(Response))
+					warn('Check the Chilly documentation for UI-library development help.')
 					task.wait(0.5)
 					Slider.Title.Text = SliderSettings.Name
 					TweenService:Create(Slider, TweenInfo.new(0.6, Enum.EasingStyle.Exponential), {BackgroundColor3 = SelectedTheme.ElementBackground}):Play()
@@ -3621,7 +3669,7 @@ function RayfieldLibrary:CreateWindow(Settings)
 		createSettings(Window)
 	end)
 
-	if not success then warn('Rayfield had an issue creating settings.') end
+	if not success then warn('Chilly had an issue creating settings.') end
 
 	-- Report after createSettings so loadSettings() has run and usageAnalytics reflects the user's saved preference
 	if reporter and getSetting("System", "usageAnalytics") then
@@ -3778,7 +3826,7 @@ if Topbar:FindFirstChild('Settings') then
 				end
 			end
 
-			Elements.UIPageLayout:JumpTo(Elements['Rayfield Settings'])
+			Elements.UIPageLayout:JumpTo(Elements['Chilly Settings'])
 		end)
 	end)
 
@@ -3852,15 +3900,15 @@ function RayfieldLibrary:LoadConfiguration()
 				end
 			else
 				notified = true
-				RayfieldLibrary:Notify({Title = "Rayfield Configurations", Content = "We couldn't enable Configuration Saving as you are not using software with filesystem support.", Image = 4384402990})
+				RayfieldLibrary:Notify({Title = "Chilly Configurations", Content = "We couldn't enable Configuration Saving as you are not using software with filesystem support.", Image = 4384402990})
 			end
 		end)
 
 		if success and loaded and not notified then
-			RayfieldLibrary:Notify({Title = "Rayfield Configurations", Content = "The configuration file for this script has been loaded from a previous session.", Image = 4384403532})
+			RayfieldLibrary:Notify({Title = "Chilly Configurations", Content = "The configuration file for this script has been loaded from a previous session.", Image = 4384403532})
 		elseif not success and not notified then
-			warn('Rayfield Configurations Error | '..tostring(result))
-			RayfieldLibrary:Notify({Title = "Rayfield Configurations", Content = "We've encountered an issue loading your configuration correctly.\n\nCheck the Developer Console for more information.", Image = 4384402990})
+			warn('Chilly Configurations Error | '..tostring(result))
+			RayfieldLibrary:Notify({Title = "Chilly Configurations", Content = "We've encountered an issue loading your configuration correctly.\n\nCheck the Developer Console for more information.", Image = 4384402990})
 		end
 	end
 
@@ -3895,9 +3943,9 @@ if useStudio then
 	--		Title = "Untitled",
 	--		Subtitle = "Key System",
 	--		Note = "No method of obtaining the key is provided",
-	--		FileName = "Key", -- It is recommended to use something unique as other scripts using Rayfield may overwrite your key file
+	--		FileName = "Key", -- It is recommended to use something unique as other scripts using Chilly may overwrite your key file
 	--		SaveKey = true, -- The user's key will be saved, but if you change the key, they will be unable to use your script
-	--		GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Rayfield to get the key from
+	--		GrabKeyFromSite = false, -- If this is true, set Key below to the RAW site you would like Chilly to get the key from
 	--		Key = {"Hello"} -- List of keys that will be accepted by the system, can be RAW file links (pastebin, github etc) or simple strings ("hello","key22")
 	--	}
 	--})
@@ -3944,7 +3992,7 @@ if useStudio then
 	--})
 
 
-	----RayfieldLibrary:Notify({Title = "Rayfield Interface", Content = "Welcome to Rayfield. These - are the brand new notification design for Rayfield, with custom sizing and Rayfield calculated wait times.", Image = 4483362458})
+	----RayfieldLibrary:Notify({Title = "Chilly Interface", Content = "Welcome to Chilly. These - are the brand new notification design for Rayfield, with custom sizing and Chilly calculated wait times.", Image = 4483362458})
 
 	--local Section = Tab:CreateSection("Section Example")
 
